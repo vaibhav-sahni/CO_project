@@ -31,6 +31,21 @@ funct3={
     'bne': '001',
     
 }
+instruction_type={
+    'add': 'R',
+    'sub': 'R',
+    'slt': 'R',
+    'srt': 'R',
+    'or': 'R',
+    'and': 'R',
+    'lw': 'I',
+    'addi': 'I',
+    'jalr': 'I',
+    'sw':'S',
+    'beq': 'B',
+    'bne': 'B',
+    'jal':'J',
+}
 
 opcode={
     #R type
