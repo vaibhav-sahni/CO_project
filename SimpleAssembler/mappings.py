@@ -1,4 +1,4 @@
-
+#mappings for all instructions (funct7, funct3, opcode) and registers
 
 funct7={ #only R type have a funct7
     'add': '0000000',
