@@ -3,7 +3,7 @@
 from mappings import opcode,registers,funct3,funct7
 
 def parse_R(inst,rd, rs1,rs2):
-    return funct7[inst] + registers[rs1] + registers[rs2] + funct3[inst] + registers[rd] + opcode[registers]
+    return funct7[inst] + registers[rs1] + registers[rs2] + funct3[inst] + registers[rd] + opcode[inst]
 
 def parse_I(inst,rd,rs1,imm):
     imm_bin = format(int(imm) & 0xFFF, "012b") #formatting the imm value into 2's complement binary
