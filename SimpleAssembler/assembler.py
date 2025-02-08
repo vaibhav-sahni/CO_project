@@ -14,6 +14,7 @@ def tokens(assembly_text):
     print(instructions) #returning the list of instructions
     return instructions
 
+<<<<<<< Updated upstream
 def check_label(instruction,labels): #checking if the instruction is a new label and adding it to the labels dictionary with the program counter
     global program_counter
     if instruction[0].endswith(':'): #checking if the instruction is a label
@@ -154,3 +155,7 @@ main(read_file,write_file)
 # print("Testing the SimpleAssembler-10\n")
 # main("automatedTesting/tests/assembly/simpleBin/Ex_test_10.txt")
 # print()
+=======
+import sys
+
+>>>>>>> Stashed changes
