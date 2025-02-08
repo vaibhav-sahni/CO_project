@@ -1,5 +1,4 @@
 from mappings import instruction_type,opcode,registers,funct3,funct7
-from sys import stdin
 import sys
 from parsing import parse_R,parse_I,parse_B,parse_J,parse_S
 def tokens(assembly_text):
@@ -51,16 +50,18 @@ def main(open_file,write_file):
         program_counter+=4
 
     program_counter=0
-    count = 1
+    # count = 1
     for instruction in instructions:
         if instruction==['beq','zero','zero','0']: #checking for the hault instruction
             labels['0']=program_counter
             hault=instruction
         if instruction[0] in instruction_type: #checking the instruction type and calling the respective function to parse the instruction
-            print(count,end=' ')
-            count+=1
-            print(instruction,end=' ')
-            print(instruction_type[instruction[0]])
+            
+            # print(count,end=' ')
+            # count+=1
+            # print(instruction,end=' ')
+            # print(instruction_type[instruction[0]])
+
             # calling for R type instructions
             instruct=instruction[0]
             if instruction_type[instruct]=='R':
@@ -111,7 +112,7 @@ def main(open_file,write_file):
     # print(instructions)
     # print(labels)
 
-    file=open('write_file.txt','w')
+    file=open(write_file,'w')
     for instruction in binary_instructions:
         file.write(instruction+'\n')
     file.close()
