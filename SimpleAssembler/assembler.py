@@ -1,7 +1,7 @@
 from mappings import instruction_type,opcode,registers,funct3,funct7
 import sys
 from parsing import parse_R,parse_I,parse_B,parse_J,parse_S
-from error_handling import check_syntax_errors 
+from error_handling import error_handling
 
 def tokens(assembly_text):
     instructions=[]
@@ -50,19 +50,14 @@ def main(open_file,write_file):
     #             instructions.remove(instruction)
     #     program_counter+=4
 
+    error_handling(instructions)  # Calls the function that handles syntax errors and stops if there's an error
+    
     for instruction in instructions:
-        try:
-            # Check for syntax errors before parsing
-            check_syntax_errors(instruction, labels)
-
-            if check_label(instruction, labels):
-                instruction.pop(0)
-                if not instruction:
-                    instructions.remove(instruction)
-            program_counter += 4
-        except SyntaxError as e:
-            print(f"Syntax Error: {e}")
-            continue  # Continue to the next instruction if there's a syntax error
+        if check_label(instruction, labels):
+            instruction.pop(0)
+            if not instruction:
+                instructions.remove(instruction)
+        program_counter += 4
 
     program_counter=0
     # count = 1
