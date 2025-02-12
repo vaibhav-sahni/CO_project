@@ -8,7 +8,6 @@ def tokens(assembly_text):
             line=line.replace(',',' ') #replacing commas,brackets with spaces to split the line
             line=line.replace('(',' ')
             line=line.replace(':',': ')
-            line=line.replace(':  ',': ')
             line=line.replace(')','')
             instructions.append(line.split(' '))
     print(instructions) #returning the list of instructions

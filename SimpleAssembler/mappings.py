@@ -104,7 +104,8 @@ registers={
     't0': '00101',
     't1': '00110',
     't2': '00111',
-    's0': '01000','fp': '01000', #saved register/frame pointer
+    's0': '01000',
+    'fp': '01000', #saved register/frame pointer
     's1': '01001',  #saved register
     'a0': '01010',
     'a1': '01011',
