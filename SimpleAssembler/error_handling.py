@@ -67,7 +67,16 @@ def check_syntax_errors(instruction, labels,assembly_text):
 
     return True 
 
-def error_handling(instructions):
+def check_valid_file(file_name):
+    try:
+        file = open(file_name, 'r')
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {file_name}")
+    file.close()
+    return True
+
+def error_handling(file_name,instructions):
+    check_valid_file(file_name)
     for index, instruction in enumerate(instructions):
         try:
             check_syntax_errors(instruction, labels={})  # Empty labels for now, can be passed as needed
