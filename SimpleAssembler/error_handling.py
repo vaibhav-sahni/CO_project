@@ -17,15 +17,20 @@ def check_syntax_errors(instruction, labels,assembly_text):
                 raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
             if len(text) != 6:
                 raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+            if instruction_type[text[0]] =="B" and (int(text[-1]) > 2047 or int(text[-1]) < -2048):
+                raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[-1]}")
             
         elif instruction_type[text[0]] == "I" or instruction_type[text[0]] == "S":
-            if text[0] == 'addi':
+            if text[0] == 'addi' or text[0] == 'jalr':
                 if text[2] != ',' or text[4] != ',':
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
                 if text[-1] == ":":
                     raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
                 if len(text) != 6:
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                if int(text[5]) > 2047 or int(text[5]) < -2048:
+                    raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[5]}")
+
             elif text[0] in ['lw', 'sw']:
                 if text[2] != ',' or text[4][0] != '(' or text[4][-1] != ')':
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
@@ -33,6 +38,8 @@ def check_syntax_errors(instruction, labels,assembly_text):
                     raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
                 if len(text) != 5:
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                if int(text[3]) > 2047 or int(text[3]) < -2048:
+                    raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
                 
         elif instruction_type[text[0]] == "J":
             if text[2] != ',':
@@ -41,6 +48,8 @@ def check_syntax_errors(instruction, labels,assembly_text):
                 raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
             if len(text) != 4:
                 raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+            if int(text[3]) > 1048575 or int(text[3]) < -1048576:
+                raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
             
         registers_list = list(registers.keys())
         for reg in instruction[1:]: 
@@ -52,20 +61,53 @@ def check_syntax_errors(instruction, labels,assembly_text):
             raise SyntaxError(f"Invalid label syntax {text[0]}: {assembly_text}")
         if text[0][0].isdigit():
             raise SyntaxError(f"Invalid label name {text[0]}: {assembly_text}")
-
-    if instruction[0] in ['addi', 'lw', 'sw', 'beq']:
-        try:
-            # Check if immediate is a number and validate size (12-bit immediate for RV32I)
-            if instruction[2].lstrip('-').isdigit():
-                immediate = int(instruction[2])
-                if instruction[0] == 'addi' and not (-2048 <= immediate <= 2047):
-                    raise SyntaxError(f"Immediate value out of range for {instruction[0]}: {instruction[2]}")
-                elif instruction[0] in ['sw', 'lw'] and not (-2048 <= immediate <= 2047):
-                    raise SyntaxError(f"Immediate value out of range for {instruction[0]}: {instruction[2]}")
-        except ValueError:
-            raise SyntaxError(f"Invalid immediate value: {instruction[2]}")
+        if text[0] in labels:
+            raise SyntaxError(f"Duplicate label found: {text[0]}")
 
     return True 
+
+def instriction_specific_errors(assembly_text,label):
+    text = tokens(assembly_text)
+    if ":" in text:
+        text = text[text.index(":")+1:]
+    if not label:
+        if text[0] == "lw":
+            if not text[3].isdigit():
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "addi":
+            if not text[-1].isdigit():
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "jalr":
+            if not text[-1].isdigit():
+                raise SyntaxError(f"Invalid immediate value {text[0]}: {assembly_text}")
+        if text[0] == "sw":
+            if not text[3].isdigit():
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "beq" or text[0] == "bne":
+            if not text[-1].isdigit():
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "jal":
+            if not text[-1].isdigit():
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+    else:
+        if text[0] == "lw":
+            if text[3] not in label:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "addi":
+            if text[-1] not in label:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "jalr":
+            if text[-1] not in label:
+                raise SyntaxError(f"Invalid immediate value {text[0]}: {assembly_text}")
+        if text[0] == "sw":
+            if text[3] not in label:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "beq" or text[0] == "bne":
+            if text[-1] not in label:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+        if text[0] == "jal":
+            if text[-1] not in label:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
 
 def check_valid_file(file_name):
     try:
@@ -85,4 +127,4 @@ def error_handling(file_name,instructions):
             sys.exit(1)  # Stop execution on error
 
 
-print(check_syntax_errors(['label','add', 'ra', 'sp', 'gp'], {},"4label:add ra, sp, gp"))
+print(check_syntax_errors(['lw','ra','99999','sp'], {},"lw ra, 99999(sp)"))
