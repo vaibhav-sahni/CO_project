@@ -128,8 +128,8 @@ class AsmGrader(Grader):
 			hardPass, hardTotal = self.handleBin(self.ASM_HARD_DIR, self.BIN_HARD_DIR)
 			
 			# uncomment to evaluate error tests
-			# self.printSev(self.HIGH, bcolors.OKBLUE + bcolors.BOLD + "Running error tests" + bcolors.ENDC)
-			# self.handleErrorGen()  
+			self.printSev(self.HIGH, bcolors.OKBLUE + bcolors.BOLD + "Running error tests" + bcolors.ENDC)
+			self.handleErrorGen()  
 
 			res = [
 					["Simple", simplePass, simpleTotal, self.SIMPLE_MARKS],

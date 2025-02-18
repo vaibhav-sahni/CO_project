@@ -8,9 +8,10 @@ def tokens(assembly_text):
             line=line.replace(',',' ') #replacing commas,brackets with spaces to split the line
             line=line.replace('(',' ')
             line=line.replace(':',': ')
+            line=line.replace(':  ',': ')
             line=line.replace(')','')
             instructions.append(line.split(' '))
-    print(instructions) #returning the list of instructions
+    # print(instructions) #returning the list of instructions
     return instructions
 def check_label(instruction,labels): #checking if the instruction is a new label and adding it to the labels dictionary with the program counter
     global program_counter
