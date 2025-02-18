@@ -11,6 +11,8 @@ def check_syntax_errors(instruction, labels,assembly_text):
     text = tokens(assembly_text)
     if text[0] in instruction_type:
         if instruction_type[text[0]] == "R" or instruction_type[text[0]] == "B":
+            if len(instruction) != 4:
+                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}") 
             if text[2] != ',' or text[4] != ',':
                 raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
             if text[-1] == ":":
@@ -38,8 +40,11 @@ def check_syntax_errors(instruction, labels,assembly_text):
                     raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
                 if len(text) != 5:
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-                if int(text[3]) > 2047 or int(text[3]) < -2048:
-                    raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
+                try:
+                    if int(text[3]) > 2047 or int(text[3]) < -2048:
+                        raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
+                except ValueError:
+                    raise SyntaxError(f"Invalid immediate value for {text[0]}: {text[3]}")
                 
         elif instruction_type[text[0]] == "J":
             if text[2] != ',':
@@ -52,7 +57,8 @@ def check_syntax_errors(instruction, labels,assembly_text):
                 raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
             
         registers_list = list(registers.keys())
-        for reg in instruction[1:]: 
+        reges = [i.strip('()') for i in instruction[1:] if i.isalnum() and not i.isdigit()]
+        for reg in reges: 
             if reg not in registers_list:
                 raise SyntaxError(f"Invalid register: {reg}")
             
@@ -127,4 +133,4 @@ def error_handling(file_name,instructions):
             sys.exit(1)  # Stop execution on error
 
 
-print(check_syntax_errors(['lw','ra','99999','sp'], {},"lw ra, 99999(sp)"))
+print(check_syntax_errors(['add','s2','s2','s3'], {},"add s2,s2,s3"))
