@@ -24,3 +24,5 @@ def parse_J(inst,rd,imm):
     imm_bin = format(int(imm) & 0x1FFFFF, "021b")
     imm_parts = imm_bin[0] + imm_bin[10:20] + imm_bin[9] + imm_bin[1:9]
     return imm_parts + registers[rd] + opcode[inst]
+
+print(parse_B('beq','zero','zero',0))
