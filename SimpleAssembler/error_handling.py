@@ -102,9 +102,6 @@ def check_syntax_errors(instruction, labels,assembly_text):
                 raise SyntaxError(f"Invalid label syntax {text[0]}: {assembly_text}")
             if text[0][0].isdigit():
                 raise SyntaxError(f"Invalid label name {text[0]}: {assembly_text}")
-            # if text[0] in labels:
-            #     raise SyntaxError(f"Duplicate label found: {text[0]}")
-
         return True 
 
 def instructionSpecificError(assembly_text,label):
@@ -113,14 +110,23 @@ def instructionSpecificError(assembly_text,label):
         text = text[text.index(":")+1:]
     if text[-1] not in label:
         if text[0] == "lw":
-            if not int(text[3]) >= -2048 and int(text[3]) <= 2047:
+            try:
+                if not int(text[3]) >= -2048 and int(text[3]) <= 2047:
+                    raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+            except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "addi":
-            if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
+            try:
+                if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
+                    raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+            except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "jalr":
-            if not int(text[-1])>=-2048 and int(text[-1])<=2047:
-                raise SyntaxError(f"Invalid immediate value {text[0]}: {assembly_text}")
+            try:
+                if not int(text[-1])>=-2048 and int(text[-1])<=2047:
+                    raise SyntaxError(f"Invalid immediate value {text[0]}: {assembly_text}")
+            except ValueError:
+                raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "sw":
             try:
                 if not int(text[3]) >= -2048 and int(text[3]) <= 2047:
@@ -128,10 +134,16 @@ def instructionSpecificError(assembly_text,label):
             except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "beq" or text[0] == "bne":
-            if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
+            try:
+                if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
+                    raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+            except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "jal":
-            if not int(text[-1]) >= -1048576 and int(text[-1]) <= 1048575:
+            try:
+                if not int(text[-1]) >= -1048576 and int(text[-1]) <= 1048575:
+                    raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+            except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
     else:
         if text[0] == "lw":
