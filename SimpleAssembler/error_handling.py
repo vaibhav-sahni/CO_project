@@ -2,98 +2,136 @@ import sys
 import re
 from mappings import instruction_type, registers
 
-def tokens(assembly_text):
+def tokenization(assembly_text):
+    tokens = []
     for line in assembly_text.split('\n'):
-        tokens = re.findall(r'\w+\[.*?\]|\w+|\(.*?\)|[^\w\s]', line)
+        tokenization = re.findall(r'\w+-\w+|\w+\[.*?\]|\w+|\(.*?\)|[^\w\s]', line)
+        tokens.extend(tokenization)
+
+    for i in range(len(tokens)-1):
+        if tokens[i] == "-":
+            tokens[i] = tokens[i] + tokens[i+1]
+            tokens.pop(i+1)
     return tokens
 
 def check_syntax_errors(instruction, labels,assembly_text):
-    text = tokens(assembly_text)
-    if text[0] in instruction_type:
-        if instruction_type[text[0]] == "R" or instruction_type[text[0]] == "B":
-            if len(instruction) != 4:
-                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}") 
-            if text[2] != ',' or text[4] != ',':
-                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-            if text[-1] == ":":
-                raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
-            if len(text) != 6:
-                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-            if instruction_type[text[0]] =="B" and (int(text[-1]) > 2047 or int(text[-1]) < -2048):
-                raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[-1]}")
-            
-        elif instruction_type[text[0]] == "I" or instruction_type[text[0]] == "S":
-            if text[0] == 'addi' or text[0] == 'jalr':
+    text = tokenization(assembly_text)
+    if len(assembly_text) == 0:
+        return True
+    else:
+        if text[0] in instruction_type:
+            if instruction_type[text[0]] == "R" or instruction_type[text[0]] == "B":
+                if len(instruction) != 4:
+                    raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}") 
                 if text[2] != ',' or text[4] != ',':
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
                 if text[-1] == ":":
                     raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
                 if len(text) != 6:
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-                if int(text[5]) > 2047 or int(text[5]) < -2048:
-                    raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[5]}")
+                if instruction_type[text[0]] =="B":
+                    if text[-1] not in labels and text[-1].isnumeric() == False:
+                        raise SyntaxError(f"Invalid label found: {text[-1]}")
+                    elif text[-1].isnumeric() and (int(text[-1]) > 2047 or int(text[-1]) < -2048):
+                        raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[-1]}")
+                
+            elif instruction_type[text[0]] == "I" or instruction_type[text[0]] == "S":
+                if text[0] == 'addi' or text[0] == 'jalr':
+                    if text[2] != ',' or text[4] != ',':
+                        raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                    if text[-1] == ":":
+                        raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
+                    if len(text) != 6:
+                        raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                    if int(text[5]) > 2047 or int(text[5]) < -2048:
+                        raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[5]}")
 
-            elif text[0] in ['lw', 'sw']:
-                if text[2] != ',' or text[4][0] != '(' or text[4][-1] != ')':
+                elif text[0] in ['lw', 'sw']:
+                    if text[2] != ',' or text[4][0] != '(' or text[4][-1] != ')':
+                        raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                    if text[-1] == ":":
+                        raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
+                    if len(text) != 5:
+                        raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
+                    
+            elif instruction_type[text[0]] == "J":
+                if text[2] != ',':
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
                 if text[-1] == ":":
                     raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
-                if len(text) != 5:
+                if len(text) != 4:
                     raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-                try:
-                    if int(text[3]) > 2047 or int(text[3]) < -2048:
-                        raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
-                except ValueError:
-                    raise SyntaxError(f"Invalid immediate value for {text[0]}: {text[3]}")
                 
-        elif instruction_type[text[0]] == "J":
-            if text[2] != ',':
-                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-            if text[-1] == ":":
-                raise SyntaxError(f"Invalid label location {text[0]}: {assembly_text}")
-            if len(text) != 4:
-                raise SyntaxError(f"Invalid syntax for {text[0]}: {assembly_text}")
-            if int(text[3]) > 1048575 or int(text[3]) < -1048576:
-                raise SyntaxError(f"Immediate value out of range for {text[0]}: {text[3]}")
+            if instruction_type[text[0]] == "R":
+                if instruction[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
+                if instruction[2] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[2]}: {assembly_text}")
+                if instruction[3] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[3]}: {assembly_text}")
             
-        registers_list = list(registers.keys())
-        reges = [i.strip('()') for i in instruction[1:] if i.isalnum() and not i.isdigit()]
-        for reg in reges: 
-            if reg not in registers_list:
-                raise SyntaxError(f"Invalid register: {reg}")
+            if instruction_type[text[0]] == "B":
+                if instruction[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
+                if instruction[2] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[2]}: {assembly_text}")
+                
+            if instruction_type[text[0]] == "J":
+                if instruction[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
             
-    else:
-        if text.count(":") != 1 or text[1] != ":":
-            raise SyntaxError(f"Invalid label syntax {text[0]}: {assembly_text}")
-        if text[0][0].isdigit():
-            raise SyntaxError(f"Invalid label name {text[0]}: {assembly_text}")
-        if text[0] in labels:
-            raise SyntaxError(f"Duplicate label found: {text[0]}")
+            if text[0] == "jalr":
+                if instruction[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
+                if instruction[2] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[3]}: {assembly_text}")
+                
+            if text[0] == 'lw':
+                if text[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
+                if text[4].strip("()") not in registers:
+                    raise SyntaxError(f"Invalid register name {text[4]}: {assembly_text}")
+            if text[0] == 'addi':
+                if text[1] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[1]}: {assembly_text}")
+                if text[3] not in registers:
+                    raise SyntaxError(f"Invalid register name {text[3]}: {assembly_text}")
+                
+        else:
+            if text.count(":") != 1 or text[1] != ":":
+                raise SyntaxError(f"Invalid label syntax {text[0]}: {assembly_text}")
+            if text[0][0].isdigit():
+                raise SyntaxError(f"Invalid label name {text[0]}: {assembly_text}")
+            # if text[0] in labels:
+            #     raise SyntaxError(f"Duplicate label found: {text[0]}")
 
-    return True 
+        return True 
 
-def instriction_specific_errors(assembly_text,label):
-    text = tokens(assembly_text)
+def instructionSpecificError(assembly_text,label):
+    text = tokenization(assembly_text)
     if ":" in text:
         text = text[text.index(":")+1:]
-    if not label:
+    if text[-1] not in label:
         if text[0] == "lw":
-            if not text[3].isdigit():
+            if not int(text[3]) >= -2048 and int(text[3]) <= 2047:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "addi":
-            if not text[-1].isdigit():
+            if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "jalr":
-            if not text[-1].isdigit():
+            if not int(text[-1])>=-2048 and int(text[-1])<=2047:
                 raise SyntaxError(f"Invalid immediate value {text[0]}: {assembly_text}")
         if text[0] == "sw":
-            if not text[3].isdigit():
+            try:
+                if not int(text[3]) >= -2048 and int(text[3]) <= 2047:
+                    raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
+            except ValueError:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "beq" or text[0] == "bne":
-            if not text[-1].isdigit():
+            if not int(text[-1]) >= -2048 and int(text[-1]) <= 2047:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
         if text[0] == "jal":
-            if not text[-1].isdigit():
+            if not int(text[-1]) >= -1048576 and int(text[-1]) <= 1048575:
                 raise SyntaxError(f"Invalid immediate value found {text[0]}: {assembly_text}")
     else:
         if text[0] == "lw":
@@ -132,5 +170,14 @@ def error_handling(file_name,instructions):
             print(f"Line {index + 1}: {e}")
             sys.exit(1)  # Stop execution on error
 
-
-print(check_syntax_errors(['add','s2','s2','s3'], {},"add s2,s2,s3"))
+def check_virtual_halt(file_name):
+    try:
+        file = open(file_name, 'r')
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {file_name}")
+    assembly_text = file.read()
+    text = tokenization(assembly_text)
+    if text[-1] != "hlt":
+        raise SyntaxError(f"Missing halt instruction")
+    file.close()
+    return True
