@@ -1,6 +1,8 @@
 from mappings import instruction_type,opcode,registers,funct3,funct7
 import sys
 from parsing import parse_R,parse_I,parse_B,parse_J,parse_S
+from error_handling import check_syntax_errors,instructionSpecificError
+
 def tokens(assembly_text):
     instructions=[]
     for line in assembly_text.split('\n'):
@@ -13,6 +15,17 @@ def tokens(assembly_text):
             instructions.append(line.split(' '))
     # print(instructions) #returning the list of instructions
     return instructions
+
+def error_main(assembly_text,labels,instructions):
+    for line in assembly_text.split('\n'):
+        if line:
+            instruction = line.replace(',', ' ').replace(':', ' ').split()
+            check_syntax_errors(instruction, labels, line)
+            instructionSpecificError(line,labels)
+
+    if instructions[-1] != ["beq", "zero", "zero", "0"]: #checking if the hault instruction is present
+        raise SyntaxError("Hault instruction not found")
+
 def check_label(instruction,labels): #checking if the instruction is a new label and adding it to the labels dictionary with the program counter
     global program_counter
     if instruction[0].endswith(':'): #checking if the instruction is a label
@@ -48,6 +61,8 @@ def main(open_file,write_file):
                 instructions.remove(instruction)
         program_counter+=4
 
+    error_main(assembly_text,labels,instructions)
+
     program_counter=0
     # count = 1
     for instruction in instructions:
@@ -55,11 +70,6 @@ def main(open_file,write_file):
             labels['0']=program_counter
             hault=instruction
         if instruction[0] in instruction_type: #checking the instruction type and calling the respective function to parse the instruction
-            
-            # print(count,end=' ')
-            # count+=1
-            # print(instruction,end=' ')
-            # print(instruction_type[instruction[0]])
 
             # calling for R type instructions
             instruct=instruction[0]
@@ -119,38 +129,4 @@ def main(open_file,write_file):
 read_file = sys.argv[1]
 write_file = sys.argv[2]
 main(read_file,write_file)
-
-# # Program testing for the SimpleAssembler
-# print("Testing the SimpleAssembler-0\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_0.txt")
-# print()
-# print("Testing the SimpleAssembler-1\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_1.txt")
-# print()
-# print("Testing the SimpleAssembler-2\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_2.txt")
-# # print("Testing the SimpleAssembler\n")
-# # main("automatedTesting/tests/assembly/simpleBin/Ex_test_3.txt")
-# print()
-# print("Testing the SimpleAssembler-4\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_4.txt")
-# print()
-# print("Testing the SimpleAssembler-5\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_5.txt")
-# print()
-# print("Testing the SimpleAssembler-6\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_6.txt")
-# print()
-# print("Testing the SimpleAssembler-7\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_7.txt")
-# print()
-# print("Testing the SimpleAssembler-8\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_8.txt")
-# print()
-# print("Testing the SimpleAssembler-9\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_9.txt")
-# print()
-# print("Testing the SimpleAssembler-10\n")
-# main("automatedTesting/tests/assembly/simpleBin/Ex_test_10.txt")
-# print()
 
