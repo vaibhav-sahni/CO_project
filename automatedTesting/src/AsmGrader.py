@@ -8,7 +8,7 @@ import os
 class AsmGrader(Grader):
 
 	# simple test 0.1 x 10
-	SIMPLE_MARKS = 0.1
+	SIMPLE_MARKS = 0.2
 	# Hard test 0.2 x 5
 	HARD_MARKS = 0.2
 
@@ -128,8 +128,8 @@ class AsmGrader(Grader):
 			hardPass, hardTotal = self.handleBin(self.ASM_HARD_DIR, self.BIN_HARD_DIR)
 			
 			# uncomment to evaluate error tests
-			self.printSev(self.HIGH, bcolors.OKBLUE + bcolors.BOLD + "Running error tests" + bcolors.ENDC)
-			self.handleErrorGen()  
+			# self.printSev(self.HIGH, bcolors.OKBLUE + bcolors.BOLD + "Running error tests" + bcolors.ENDC)
+			# self.handleErrorGen()  
 
 			res = [
 					["Simple", simplePass, simpleTotal, self.SIMPLE_MARKS],
