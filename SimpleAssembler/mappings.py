@@ -131,6 +131,3 @@ registers={
     't6': '11111',
 }
 
-function_maping={
-    
-}
