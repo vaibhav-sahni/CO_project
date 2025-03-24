@@ -12,6 +12,7 @@ class RISC_V_Simulator:
     def load_binary(self, filename):
         with open(filename, "r") as f:
             self.instructions = [line.strip() for line in f.readlines()]
+
     def execute(self):
         with open(self.output_file, "w") as out:
             while not self.halted and self.pc < len(self.instructions):
@@ -27,6 +28,7 @@ class RISC_V_Simulator:
                 self.pc += 1  # Increment PC
                 self.dump_registers(out)
             self.dump_memory(out)
+
     def decode_and_execute(self, instruction):
         opcode = instruction[-7:]  # Last 7 bits for opcode
         if opcode == "0110011":  # R-type (add, sub, and, or, xor, sll, srl, sra, slt)
@@ -43,24 +45,54 @@ class RISC_V_Simulator:
             self.execute_jalr(instruction)
         elif opcode == "0010011":  # addi
             self.execute_addi(instruction)
+
     def execute_r_type(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
         funct7 = instruction[:7]
+
         if funct3 == "000" and funct7 == "0000000":  # ADD
             self.registers[rd] = self.registers[rs1] + self.registers[rs2]
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
         elif funct3 == "000" and funct7 == "0100000":  # SUB
             self.registers[rd] = self.registers[rs1] - self.registers[rs2]
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
+        elif funct3 == "111" and funct7 == "0000000":  # AND
+            self.registers[rd] = self.registers[rs1] & self.registers[rs2]
+            self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
+        elif funct3 == "110" and funct7 == "0000000":  # OR
+            self.registers[rd] = self.registers[rs1] | self.registers[rs2]
+            self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
+        elif funct3 == "010" and funct7 == "0000000":  # SLT
+            self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
+            self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
+        elif funct3 == "101" and funct7 == "0000000":  # SRL
+            self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
+            self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
 
+    def execute_lw(self, instruction):
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)
+        imm = int(instruction[:12], 2)
+        self.registers[rd] = self.memory[self.registers[rs1] + imm]
+        self.log(f"LW x{rd} = memory[x{rs1} + {imm}] -> {self.registers[rd]}")
 
+    def execute_jalr(self, instruction):
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)
+        imm = int(instruction[:12], 2)
+        self.registers[rd] = self.pc + 1
+        self.pc = self.registers[rs1] + imm - 1
+        self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
 
-
-
-
+    def execute_addi(self, instruction):
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)
+        imm = int(instruction[:12], 2)
+        self.registers[rd] = self.registers[rs1] + imm
+        self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
     def dump_registers(self, file):
         file.write(f"{self.pc * 4} " + " ".join(map(str, self.registers)) + "\n")
@@ -69,9 +101,7 @@ class RISC_V_Simulator:
             addr = f"0x{(i * 4):08X}"
             file.write(f"{addr}:{bin(self.memory[i])}\n")
     def log(self, message):
-        print(message)
-
-            
+        print(message)   
 
 def main(read_filepath, write_filepath): 
     simulator = RISC_V_Simulator()
