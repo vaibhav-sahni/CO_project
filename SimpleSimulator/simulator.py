@@ -38,7 +38,7 @@ class RISC_V_Simulator:
         elif opcode == "0100011":  # sw (store word)
             self.execute_sw(instruction)
         elif opcode == "1100011":  # Branch instructions (beq, bne, blt, bge)
-            self.execute_branch(instruction)
+            self.execute_b_type(instruction)
         elif opcode == "1101111":  # jal
             self.execute_jal(instruction)
         elif opcode == "1100111":  # jalr
@@ -71,7 +71,35 @@ class RISC_V_Simulator:
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+            
+    def execute_b_type(self, instruction):
+        rs1 = int(instruction[12:17], 2)
+        rs2 = int(instruction[7:12], 2)
+        funct3 = instruction[17:20]
 
+    # Correct Immediate Extraction (B-type format)
+        imm = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0")
+        imm = int(imm, 2)
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 13)
+
+    # Execute branch
+        if funct3 == "000":  # BEQ
+            if self.registers[rs1] == self.registers[rs2]:
+                self.pc += imm // 4  # Convert byte offset to instruction offset
+                self.log(f"BEQ: x{rs1} == x{rs2}, PC updated to {self.pc * 4}")
+
+        elif funct3 == "001":  # BNE
+            if self.registers[rs1] != self.registers[rs2]:
+                self.pc += imm // 4
+                self.log(f"BNE: x{rs1} != x{rs2}, PC updated to {self.pc * 4}")
+
+        elif funct3 == "100":  # BLT
+            if self.registers[rs1] < self.registers[rs2]:
+                self.pc += imm // 4
+                self.log(f"BLT: x{rs1} < x{rs2}, PC updated to {self.pc * 4}")
+
+    
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
