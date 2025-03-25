@@ -98,14 +98,21 @@ class RISC_V_Simulator:
             if self.registers[rs1] < self.registers[rs2]:
                 self.pc += imm // 4
                 self.log(f"BLT: x{rs1} < x{rs2}, PC updated to {self.pc * 4}")
-
     
+
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         imm = int(instruction[:12], 2)
-        self.registers[rd] = self.memory[self.registers[rs1] + imm]
-        self.log(f"LW x{rd} = memory[x{rs1} + {imm}] -> {self.registers[rd]}")
+        if instruction[0] == "1":  # Check for negative immediate
+            imm -= (1 << 12)
+        addr = (self.registers[rs1] + imm) // 4
+        if 0 <= addr < len(self.memory):
+            self.registers[rd] = self.memory[addr]
+            self.log(f"LW x{rd} = memory[x{rs1} + {imm}] -> {self.registers[rd]}")
+        else:
+            # handles invalid memory accesses.
+            self.log(f"LW: Invalid memory access at {addr * 4}") 
 
     def execute_jalr(self, instruction):
         rd = int(instruction[20:25], 2)
@@ -115,12 +122,17 @@ class RISC_V_Simulator:
         self.pc = self.registers[rs1] + imm - 1
         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
 
+
+
     def execute_addi(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         imm = int(instruction[:12], 2)
+        if instruction[0] == "1":  # Check for negative immediate
+            imm -= (1 << 12)
         self.registers[rd] = self.registers[rs1] + imm
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
+
 
     def dump_registers(self, file):
         file.write(f"{self.pc * 4} " + " ".join(map(str, self.registers)) + "\n")
