@@ -99,28 +99,78 @@ class RISC_V_Simulator:
                 self.pc += imm // 4
                 self.log(f"BLT: x{rs1} < x{rs2}, PC updated to {self.pc * 4}")
 
+
+    def sign_extend(self, value, bits):
+        """
+        perform two's complement sign extension
+        :param value: The binary value to extend
+        :param bits: Number of bits in the original value
+        :return: Signed integer value
+        """
+        if value & (1 << (bits - 1)):
+            # If sign bit is set, extend with 1s
+            value -= (1 << bits)
+
+        return value
     
+
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
+
+        # two's complement conversion for immediate
         imm = int(instruction[:12], 2)
-        self.registers[rd] = self.memory[self.registers[rs1] + imm]
-        self.log(f"LW x{rd} = memory[x{rs1} + {imm}] -> {self.registers[rd]}")
+        imm = self.sign_extend(imm, 12)
+        # Calculate byte-level address
+        addr = self.registers[rs1] + imm
+        
+        # Convert to word index in memory array
+        memory_index = addr // 4
+        
+        if 0 <= memory_index < len(self.memory):
+            self.registers[rd] = self.memory[memory_index]
+            self.log(f"LW x{rd} = memory[x{rs1} + {imm}={addr}] -> {self.registers[rd]}")
+        else:
+            self.log(f"LW: Invalid memory access at {addr}")
+
+    def execute_sw(self, instruction):
+        rs1 = int(instruction[12:17], 2)
+        rs2 = int(instruction[7:12], 2)
+        imm = int(instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0", 2)
+        imm = self.sign_extend(imm, 12)
+        addr = self.registers[rs1] + imm
+        memory_index = addr // 4
+
+        if 0 <= memory_index < len(self.memory):
+            self.memory[memory_index] = self.registers[rs2]
+            self.log(f"SW memory[x{rs1} + {imm}={addr}] = x{rs2} -> {self.memory[memory_index]}")
+        else:
+            self.log(f"SW: Invalid memory access at {addr}")
+
+
+    def execute_addi(self, instruction):
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)
+        
+        # Correct two's complement conversion
+        imm = int(instruction[:12], 2)
+        imm = self.sign_extend(imm, 12)
+        
+        self.registers[rd] = self.registers[rs1] + imm
+        self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
+
 
     def execute_jalr(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         imm = int(instruction[:12], 2)
+        
+        # sign extending the immediate 
+        imm = self.sign_extend(imm, 12)
         self.registers[rd] = self.pc + 1
         self.pc = self.registers[rs1] + imm - 1
         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
 
-    def execute_addi(self, instruction):
-        rd = int(instruction[20:25], 2)
-        rs1 = int(instruction[12:17], 2)
-        imm = int(instruction[:12], 2)
-        self.registers[rd] = self.registers[rs1] + imm
-        self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
     def dump_registers(self, file):
         file.write(f"{self.pc * 4} " + " ".join(map(str, self.registers)) + "\n")
