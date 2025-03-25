@@ -72,6 +72,25 @@ class RISC_V_Simulator:
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
 
+    def execute_b_type(self, instruction):
+        rs1 = int(instruction[12:17], 2)
+        rs2 = int(instruction[7:12], 2)
+        funct3 = instruction[17:20]
+        imm = int(instruction[:7] + instruction[20:25], 2)
+        
+        if funct3 == "000":  # BEQ
+            if self.registers[rs1] == self.registers[rs2]:
+                self.pc += imm - 1
+                self.log(f"BEQ: PC set to {self.pc * 4}")
+        elif funct3 == "001":  # BNE
+            if self.registers[rs1] != self.registers[rs2]:
+                self.pc += imm - 1
+                self.log(f"BNE: PC set to {self.pc * 4}")
+        elif funct3 == "100":  # BLT
+            if self.registers[rs1] < self.registers[rs2]:
+                self.pc += imm - 1
+                self.log(f"BLT: PC set to {self.pc * 4}")
+
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
