@@ -4,7 +4,7 @@
 class RISC_V_Simulator:
     def __init__(self):
         self.registers = [0] * 32  # 32 general-purpose registers
-        self.registers[3]=380
+        self.registers[2]=380
         self.memory = [0]*32  # 32 words (each 32-bit)
         self.pc = 0  # Program counter
         self.halted = False
