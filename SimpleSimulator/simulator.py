@@ -136,17 +136,15 @@ class RISC_V_Simulator:
     def execute_sw(self, instruction):
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
-        imm = int(instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0", 2)
+        imm = int(instruction[:7] + instruction[20:25], 2)
         imm = self.sign_extend(imm, 12)
         addr = self.registers[rs1] + imm
         memory_index = addr // 4
-
         if 0 <= memory_index < len(self.memory):
             self.memory[memory_index] = self.registers[rs2]
             self.log(f"SW memory[x{rs1} + {imm}={addr}] = x{rs2} -> {self.memory[memory_index]}")
         else:
             self.log(f"SW: Invalid memory access at {addr}")
-
 
     def execute_addi(self, instruction):
         rd = int(instruction[20:25], 2)
