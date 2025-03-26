@@ -48,6 +48,11 @@ class RISC_V_Simulator:
         elif opcode == "0010011":  # addi
             self.execute_addi(instruction)
 
+    def to_twos_complement(self , value):
+        if value < 0:
+            return (1 << 32) + value  # Add 2^32 to negative numbers
+        return value
+
     def execute_r_type(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
@@ -57,22 +62,47 @@ class RISC_V_Simulator:
 
         if funct3 == "000" and funct7 == "0000000":  # ADD
             self.registers[rd] = self.registers[rs1] + self.registers[rs2]
+
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "000" and funct7 == "0100000":  # SUB
             self.registers[rd] = self.registers[rs1] - self.registers[rs2]
+
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "111" and funct7 == "0000000":  # AND
             self.registers[rd] = self.registers[rs1] & self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "110" and funct7 == "0000000":  # OR
             self.registers[rd] = self.registers[rs1] | self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        
             self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "010" and funct7 == "0000000":  # SLT
             self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+
 
     # def sign_extend(self, value, bits):
     #     """
@@ -126,7 +156,6 @@ class RISC_V_Simulator:
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
 
-        # two's complement conversion for immediate
         imm = int(instruction[:12], 2)
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
@@ -139,6 +168,8 @@ class RISC_V_Simulator:
         
         if 0 <= memory_index < len(self.memory):
             self.registers[rd] = self.memory[memory_index]
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"LW x{rd} = memory[x{rs1} + {imm}={addr}] -> {self.registers[rd]}")
         else:
             self.log(f"LW: Invalid memory access at {addr}")
@@ -167,6 +198,8 @@ class RISC_V_Simulator:
             imm -= (1 << 12)
         
         self.registers[rd] = self.registers[rs1] + imm
+        # Convert to two's complement before logging/writing
+        self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
 
@@ -178,6 +211,8 @@ class RISC_V_Simulator:
         # sign extending the immediate 
         imm = self.sign_extend(imm, 12)
         self.registers[rd] = self.pc + 1
+        # Convert to two's complement before logging/writing
+        self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.pc = self.registers[rs1] + imm - 1
         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
 
