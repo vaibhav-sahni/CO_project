@@ -178,7 +178,8 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         imm = int(instruction[:7] + instruction[20:25], 2)
-        imm = self.sign_extend(imm, 12)
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 12)
         addr = self.registers[rs1] + imm
         memory_index = addr // 4
         if 0 <= memory_index < len(self.memory):
@@ -209,12 +210,14 @@ class RISC_V_Simulator:
         imm = int(instruction[:12], 2)
         
         # sign extending the immediate 
-        imm = self.sign_extend(imm, 12)
-        self.registers[rd] = self.pc + 1
-        # Convert to two's complement before logging/writing
-        self.registers[rd] = self.to_twos_complement(self.registers[rd])
-        self.pc = self.registers[rs1] + imm - 1
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 12)
+
+        self.registers[rd] = self.pc - 4 
+
+        self.pc = (self.registers[rs1] + imm)//4 
         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
+        self.pc = self.pc - 1 
 
 
     def dump_registers(self, file):
