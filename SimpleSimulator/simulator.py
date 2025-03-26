@@ -21,6 +21,7 @@ class RISC_V_Simulator:
 
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
+                    self.pc += 1  # Increment PC
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
