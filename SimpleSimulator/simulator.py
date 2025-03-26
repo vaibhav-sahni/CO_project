@@ -21,6 +21,7 @@ class RISC_V_Simulator:
 
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
+                    self.pc += 1 
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
@@ -32,13 +33,13 @@ class RISC_V_Simulator:
 
     def decode_and_execute(self, instruction):
         opcode = instruction[-7:]  # Last 7 bits for opcode
-        if opcode == "0110011":  # R-type (add, sub, and, or, xor, sll, srl, sra, slt)
+        if opcode == "0110011":  # R-type (add, sub, and, or, srl, slt)
             self.execute_r_type(instruction)
         elif opcode == "0000011":  # lw (load word)
             self.execute_lw(instruction)
         elif opcode == "0100011":  # sw (store word)
             self.execute_sw(instruction)
-        elif opcode == "1100011":  # Branch instructions (beq, bne, blt, bge)
+        elif opcode == "1100011":  # Branch instructions (beq, bne, blt)
             self.execute_b_type(instruction)
         elif opcode == "1101111":  # jal
             self.execute_jal(instruction)
@@ -72,6 +73,19 @@ class RISC_V_Simulator:
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+
+    # def sign_extend(self, value, bits):
+    #     """
+    #     perform two's complement sign extension
+    #     :param value: The binary value to extend
+    #     :param bits: Number of bits in the original value
+    #     :return: Signed integer value
+    #     """
+    #     if value & (1 << (bits - 1)):
+    #         # If sign bit is set, extend with 1s
+    #         value -= (1 << bits)
+
+    #     return value
             
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
@@ -81,38 +95,31 @@ class RISC_V_Simulator:
     # Correct Immediate Extraction (B-type format)
         imm = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0")
         imm = int(imm, 2)
+       
+
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 13)
 
+       
     # Execute branch
         if funct3 == "000":  # BEQ
             if self.registers[rs1] == self.registers[rs2]:
                 self.pc += imm // 4  # Convert byte offset to instruction offset
                 self.log(f"BEQ: x{rs1} == x{rs2}, PC updated to {self.pc * 4}")
+                self.pc -= 1 
 
         elif funct3 == "001":  # BNE
             if self.registers[rs1] != self.registers[rs2]:
                 self.pc += imm // 4
                 self.log(f"BNE: x{rs1} != x{rs2}, PC updated to {self.pc * 4}")
+                self.pc -= 1 
 
         elif funct3 == "100":  # BLT
             if self.registers[rs1] < self.registers[rs2]:
                 self.pc += imm // 4
                 self.log(f"BLT: x{rs1} < x{rs2}, PC updated to {self.pc * 4}")
-
-
-    def sign_extend(self, value, bits):
-        """
-        perform two's complement sign extension
-        :param value: The binary value to extend
-        :param bits: Number of bits in the original value
-        :return: Signed integer value
-        """
-        if value & (1 << (bits - 1)):
-            # If sign bit is set, extend with 1s
-            value -= (1 << bits)
-
-        return value
+                self.pc -= 1
+                
     
 
     def execute_lw(self, instruction):
@@ -121,7 +128,9 @@ class RISC_V_Simulator:
 
         # two's complement conversion for immediate
         imm = int(instruction[:12], 2)
-        imm = self.sign_extend(imm, 12)
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 12)
+
         # Calculate byte-level address
         addr = self.registers[rs1] + imm
         
@@ -153,7 +162,9 @@ class RISC_V_Simulator:
         
         # Correct two's complement conversion
         imm = int(instruction[:12], 2)
-        imm = self.sign_extend(imm, 12)
+        # imm = self.sign_extend(imm, 12)
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 12)
         
         self.registers[rd] = self.registers[rs1] + imm
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
