@@ -104,19 +104,6 @@ class RISC_V_Simulator:
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
 
 
-    # def sign_extend(self, value, bits):
-    #     """
-    #     perform two's complement sign extension
-    #     :param value: The binary value to extend
-    #     :param bits: Number of bits in the original value
-    #     :return: Signed integer value
-    #     """
-    #     if value & (1 << (bits - 1)):
-    #         # If sign bit is set, extend with 1s
-    #         value -= (1 << bits)
-
-    #     return value
-            
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
@@ -151,7 +138,6 @@ class RISC_V_Simulator:
                 self.pc -= 1
                 
     
-
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
@@ -218,6 +204,20 @@ class RISC_V_Simulator:
         self.pc = (self.registers[rs1] + imm)//4 
         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
         self.pc = self.pc - 1 
+
+    def execute_jal(self, instruction):
+        rd = int(instruction[20:25], 2)    # Destination register (rd)
+        imm = (instruction[0] + instruction[12:20] + instruction[11] + instruction[1:11] + "0")
+        imm = int(imm, 2)
+        if instruction[0] == "1":  # Sign extension for negative values
+            imm -= (1 << 21)
+
+        self.registers[rd] = self.pc*4 + 4
+
+        # Update the program counter
+        self.pc += imm // 4 - 1  # Jump and adjust for loop increment
+        self.log(f"JAL x{rd} = {self.registers[rd]}, PC updated to {self.pc * 4}")
+        self.pc = self.pc - 1
 
 
     def dump_registers(self, file):
