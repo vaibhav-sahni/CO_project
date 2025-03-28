@@ -1,6 +1,4 @@
-# import sys
-# read_filepath = sys.argv[1]
-# write_filepath = sys.argv[2]
+import sys
 class RISC_V_Simulator:
     def __init__(self):
         self.registers = [0] * 32  # 32 general-purpose registers
@@ -228,13 +226,11 @@ class RISC_V_Simulator:
             file.write(f"{addr}:{bin(self.memory[i])}\n")
     def log(self, message):
         print(message)   
-
+read_filepath = sys.argv[1]
+write_filepath = sys.argv[2]
 def main(read_filepath, write_filepath): 
     simulator = RISC_V_Simulator()
     simulator.output_file = write_filepath
     simulator.load_binary(read_filepath)
     simulator.execute()
-
-read_filepath = 'SimpleSimulator/binary_code.txt'
-write_filepath = 'SimpleSimulator/output.txt'
 main(read_filepath, write_filepath)
