@@ -3,7 +3,7 @@ class RISC_V_Simulator:
     def __init__(self):
         self.registers = [0] * 32  # 32 general-purpose registers
         self.registers[2]=380
-        self.memory = [0]*((2**16) -1)  # 32 words (each 32-bit)
+        self.memory = [0]*((2**16))  # 32 words (each 32-bit)
         self.pc = 0  # Program counter
         self.halted = False
         self.output_file = "output.txt"
@@ -14,6 +14,7 @@ class RISC_V_Simulator:
     def execute(self):
         with open(self.output_file, "w") as out:
             while not self.halted and self.pc < len(self.instructions):
+                self.registers[0] = 0 ; # hardcoding x0 to 0 
                 instruction = self.instructions[self.pc]
                 self.log(f"Executing PC={self.pc * 4}: {instruction}")
 
@@ -186,23 +187,17 @@ class RISC_V_Simulator:
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
-
-    def execute_jalr(self, instruction):
-        rd = int(instruction[20:25], 2)
-        rs1 = int(instruction[12:17], 2)
-        imm = int(instruction[:12], 2)
-        
-        # # sign extending the immediate 
-        # if instruction[0] == "1":  # Sign extension for negative values
-        #     imm -= (1 << 12)
-
-        # self.registers[rd] = self.pc - 4 
-
-        if rd != 0:
-            self.pc = (self.registers[rs1] + imm)//4 
-            self.registers[rd] = (self.registers[rs1] + imm )-4
-            self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
-            self.pc = self.pc - 1 
+     def execute_jalr(self, instruction):
+          rd = int(instruction[20:25], 2)
+          rs1 = int(instruction[12:17], 2)
+          imm = int(instruction[:12], 2)
+          # sign extending the immediate 
+          if instruction[0] == "1":  # Sign extension for negative values
+              imm -= (1 << 12)
+          self.registers[rd] = self.pc - 4 
+          self.pc = (self.registers[rs1] + imm)//4 
+          self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
+          self.pc = self.pc - 1 
 
     def execute_jal(self, instruction):
         rd = int(instruction[20:25], 2)    # Destination register (rd)
@@ -216,7 +211,7 @@ class RISC_V_Simulator:
         # Update the program counter
         self.pc += imm // 4 - 1  # Jump and adjust for loop increment
         self.log(f"JAL x{rd} = {self.registers[rd]}, PC updated to {self.pc * 4}")
-        self.pc = self.pc - 1
+        # self.pc = self.pc - 1
 
     def dump_registers(self, file):
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
