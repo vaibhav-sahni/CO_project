@@ -3,7 +3,7 @@ class RISC_V_Simulator:
     def __init__(self):
         self.registers = [0] * 32  # 32 general-purpose registers
         self.registers[2]=380
-        self.memory = [0]*32  # 32 words (each 32-bit)
+        self.memory = [0]*((2**16) -1)  # 32 words (each 32-bit)
         self.pc = 0  # Program counter
         self.halted = False
         self.output_file = "output.txt"
@@ -19,7 +19,7 @@ class RISC_V_Simulator:
 
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
-                    self.pc += 1 
+                    # self.pc += 1 
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
@@ -152,7 +152,6 @@ class RISC_V_Simulator:
         
         if 0 <= memory_index < len(self.memory):
             self.registers[rd] = self.memory[memory_index]
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"LW x{rd} = memory[x{rs1} + {imm}={addr}] -> {self.registers[rd]}")
         else:
@@ -165,7 +164,7 @@ class RISC_V_Simulator:
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
         addr = self.registers[rs1] + imm
-        memory_index = addr // 4
+        memory_index = (addr // 4)
         if 0 <= memory_index < len(self.memory):
             self.memory[memory_index] = self.registers[rs2]
             self.log(f"SW memory[x{rs1} + {imm}={addr}] = x{rs2} -> {self.memory[memory_index]}")
@@ -193,15 +192,17 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
         imm = int(instruction[:12], 2)
         
-        # sign extending the immediate 
-        if instruction[0] == "1":  # Sign extension for negative values
-            imm -= (1 << 12)
+        # # sign extending the immediate 
+        # if instruction[0] == "1":  # Sign extension for negative values
+        #     imm -= (1 << 12)
 
-        self.registers[rd] = self.pc - 4 
+        # self.registers[rd] = self.pc - 4 
 
-        self.pc = (self.registers[rs1] + imm)//4 
-        self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
-        self.pc = self.pc - 1 
+        if rd != 0:
+            self.pc = (self.registers[rs1] + imm)//4 
+            self.registers[rd] = (self.registers[rs1] + imm )-4
+            self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
+            self.pc = self.pc - 1 
 
     def execute_jal(self, instruction):
         rd = int(instruction[20:25], 2)    # Destination register (rd)
@@ -218,11 +219,11 @@ class RISC_V_Simulator:
         self.pc = self.pc - 1
 
     def dump_registers(self, file):
-        file.write(f"{'{:032b}'.format(self.pc * 4)} " + " ".join(f"{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
+        file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
     def dump_memory(self, file):
         for i in range(32):
-            addr = f"0x{(i * 4):08X}"
-            file.write(f"{addr}:{"{:032b}".format(self.memory[i])}\n")
+            addr = f"0x0001{(i * 4):04X}"
+            file.write(f"{addr}:{"0b{:032b}".format(self.memory[i])}\n")
     def log(self, message):
         print(message)   
 read_filepath = sys.argv[1]
