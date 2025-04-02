@@ -14,7 +14,7 @@ class RISC_V_Simulator:
     def execute(self):
         with open(self.output_file, "w") as out:
             while not self.halted and self.pc < len(self.instructions):
-                self.registers[0] = 0 ; # hardcoding x0 to 0 
+                # self.registers[0] = 0 ;  
                 instruction = self.instructions[self.pc]
                 self.log(f"Executing PC={self.pc * 4}: {instruction}")
 
@@ -27,6 +27,7 @@ class RISC_V_Simulator:
 
                 self.decode_and_execute(instruction)
                 self.pc += 1  # Increment PC
+                self.registers[0] = 0 ;  
                 self.dump_registers(out)
             self.dump_memory(out)
 
@@ -168,7 +169,8 @@ class RISC_V_Simulator:
         memory_index = (addr // 4)
         if 0 <= memory_index < len(self.memory):
             self.memory[memory_index] = self.registers[rs2]
-            self.log(f"SW memory[x{rs1} + {imm}={addr}] = x{rs2} -> {self.memory[memory_index]}")
+            # self.log(f"SW memory[x{rs1} + {imm}={addr}] = x{rs2} -> {self.memory[memory_index]}")
+            self.log(f"Memory[{hex(addr)}] (index {memory_index}) set to {self.memory[memory_index]}")
         else:
             self.log(f"SW: Invalid memory access at {addr}")
 
@@ -176,9 +178,7 @@ class RISC_V_Simulator:
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         
-        # Correct two's complement conversion
         imm = int(instruction[:12], 2)
-        # imm = self.sign_extend(imm, 12)
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
         
@@ -187,17 +187,20 @@ class RISC_V_Simulator:
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
-     def execute_jalr(self, instruction):
-          rd = int(instruction[20:25], 2)
-          rs1 = int(instruction[12:17], 2)
-          imm = int(instruction[:12], 2)
-          # sign extending the immediate 
-          if instruction[0] == "1":  # Sign extension for negative values
-              imm -= (1 << 12)
-          self.registers[rd] = self.pc - 4 
-          self.pc = (self.registers[rs1] + imm)//4 
-          self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
-          self.pc = self.pc - 1 
+    def execute_jalr(self, instruction):
+         rd = int(instruction[20:25], 2)
+         rs1 = int(instruction[12:17], 2)
+         imm = int(instruction[:12], 2)
+ 
+         # sign extending the immediate 
+         if instruction[0] == "1":  # Sign extension for negative values
+             imm -= (1 << 12)
+ 
+         self.registers[rd] = (self.pc*4) + 4 
+ 
+         self.pc = (self.registers[rs1] + imm)//4 
+         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
+         self.pc = self.pc - 1 
 
     def execute_jal(self, instruction):
         rd = int(instruction[20:25], 2)    # Destination register (rd)
@@ -215,19 +218,17 @@ class RISC_V_Simulator:
 
     def dump_registers(self, file):
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
-    # def dump_memory(self, file):
-    #     for i in range(32):
-    #         addr = f"0x0001{(i * 4):04X}"
-    #         file.write(f"{addr}:{"0b{:032b}".format(self.memory[i])}\n")
 
     def dump_memory(self, file):
         start_addr = 0x00010000  # Starting memory address
         for i in range(32): 
             addr = start_addr + (i * 4)  # Compute actual memory address
-            file.write(f"0x{addr:08X}:{self.memory[addr // 4]}\n")  # Get correct memory index
-        
+            file.write(f"0x{addr:08X}:0b{self.memory[addr // 4]:032b}\n")  # Binary format with 32 bits
+
+
     def log(self, message):
         print(message)   
+
 read_filepath = sys.argv[1]
 write_filepath = sys.argv[2]
 def main(read_filepath, write_filepath): 
