@@ -188,21 +188,22 @@ class RISC_V_Simulator:
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
     def execute_jalr(self, instruction):
-         rd = int(instruction[20:25], 2)
-         rs1 = int(instruction[12:17], 2)
-         imm = int(instruction[:12], 2)
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)
+        imm = int(instruction[:12], 2)
  
-         # sign extending the immediate 
-         if instruction[0] == "1":  # Sign extension for negative values
+        # sign extending the immediate 
+        if instruction[0] == "1":  # Sign extension for negative values
              imm -= (1 << 12)
 
         if rd != 0 : 
             self.registers[rd] = (self.pc*4) + 4 
-            
-         self.pc = (self.registers[rs1] + imm)//4 
-         self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
-         self.pc = self.pc - 1 
+        
+        self.pc = (self.registers[rs1] + imm)//4 
+        self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
+        self.pc = self.pc - 1 
 
+    
     def execute_jal(self, instruction):
         rd = int(instruction[20:25], 2)    # Destination register (rd)
         imm = (instruction[0] + instruction[12:20] + instruction[11] + instruction[1:11] + "0")
@@ -219,13 +220,12 @@ class RISC_V_Simulator:
 
     def dump_registers(self, file):
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
-
+    
     def dump_memory(self, file):
         start_addr = 0x00010000  # Starting memory address
         for i in range(32): 
             addr = start_addr + (i * 4)  # Compute actual memory address
             file.write(f"0x{addr:08X}:0b{self.memory[addr // 4]:032b}\n")  # Binary format with 32 bits
-
 
     def log(self, message):
         print(message)   
