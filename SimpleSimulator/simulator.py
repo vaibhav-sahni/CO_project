@@ -220,10 +220,17 @@ class RISC_V_Simulator:
 
     def dump_registers(self, file):
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
+    # def dump_memory(self, file):
+    #     for i in range(32):
+    #         addr = f"0x0001{(i * 4):04X}"
+    #         file.write(f"{addr}:{"0b{:032b}".format(self.memory[i])}\n")
+
     def dump_memory(self, file):
-        for i in range(32):
-            addr = f"0x0001{(i * 4):04X}"
-            file.write(f"{addr}:{"0b{:032b}".format(self.memory[i])}\n")
+        start_addr = 0x00010000  # Starting memory address
+        for i in range(32): 
+            addr = start_addr + (i * 4)  # Compute actual memory address
+            file.write(f"0x{addr:08X}:{self.memory[addr // 4]}\n")  # Get correct memory index
+        
     def log(self, message):
         print(message)   
 read_filepath = sys.argv[1]
