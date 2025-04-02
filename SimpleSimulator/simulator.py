@@ -217,13 +217,12 @@ class RISC_V_Simulator:
         self.log(f"JAL x{rd} = {self.registers[rd]}, PC updated to {self.pc * 4}")
         self.pc = self.pc - 1
 
-
     def dump_registers(self, file):
-        file.write(f"{self.pc * 4} " + " ".join(map(str, self.registers)) + "\n")
+        file.write(f"{'{:032b}'.format(self.pc * 4)} " + " ".join(f"{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
     def dump_memory(self, file):
         for i in range(32):
             addr = f"0x{(i * 4):08X}"
-            file.write(f"{addr}:{bin(self.memory[i])}\n")
+            file.write(f"{addr}:{"{:032b}".format(self.memory[i])}\n")
     def log(self, message):
         print(message)   
 read_filepath = sys.argv[1]
