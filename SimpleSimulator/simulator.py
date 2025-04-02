@@ -195,9 +195,10 @@ class RISC_V_Simulator:
          # sign extending the immediate 
          if instruction[0] == "1":  # Sign extension for negative values
              imm -= (1 << 12)
- 
-         self.registers[rd] = (self.pc*4) + 4 
- 
+
+        if rd != 0 : 
+            self.registers[rd] = (self.pc*4) + 4 
+            
          self.pc = (self.registers[rs1] + imm)//4 
          self.log(f"JALR x{rd} = PC + 1; PC = x{rs1} + {imm} -> {self.pc * 4}")
          self.pc = self.pc - 1 
