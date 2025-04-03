@@ -17,14 +17,13 @@ class RISC_V_Simulator:
                 # self.registers[0] = 0 ;  
                 instruction = self.instructions[self.pc]
                 self.log(f"Executing PC={self.pc * 4}: {instruction}")
-
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
                     # self.pc += 1 
+                    # self.registers[0] = 0  
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
-
                 self.decode_and_execute(instruction)
                 self.pc += 1  # Increment PC
                 self.registers[0] = 0 ;  
@@ -33,7 +32,7 @@ class RISC_V_Simulator:
 
     def decode_and_execute(self, instruction):
         opcode = instruction[-7:]  # Last 7 bits for opcode
-        if opcode == "0110011":  # R-type (add, sub, and, or, srl, slt)
+        if opcode == "0110011":  # R-type (add, sub, and, or, srl, slt,mul)
             self.execute_r_type(instruction)
         elif opcode == "0000011":  # lw (load word)
             self.execute_lw(instruction)
@@ -47,6 +46,14 @@ class RISC_V_Simulator:
             self.execute_jalr(instruction)
         elif opcode == "0010011":  # addi
             self.execute_addi(instruction)
+        elif opcode=="0000000": #rst
+            self.execute_rst(instruction) 
+        elif opcode=="0000001": #rvrs--> reverse the string of bits
+            self.execute_rvrs(instruction)
+        else:
+            self.log(f"Unknown instruction: {instruction}")
+            self.halted = True  # Stop execution on unknown instruction
+        # self.dump_registers(out)
 
     def to_twos_complement(self , value):
         if value < 0:
@@ -102,13 +109,35 @@ class RISC_V_Simulator:
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+        elif funct3 == "000" and funct7 == "0000001":  # MUL
+            self.registers[rd] = self.registers[rs1] * self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        else:
+            self.log(f"Unknown R-type instruction: {instruction}")
+            self.halted = True
 
+    def execute_rst(self,instruction): #reset instruction reset the registers to initial state
+        if(instruction[0:7]=="0000000"):
+            self.registers[0]=0
+            self.registers[2]=380
+            self.log("Registers reset to initial state.")
+        else:
+            self.log("Invalid reset instruction.")
+            self.halted=True
+    
+    def execute_rvrs(self,instruction): #reverse the string of bits
+        rd = int(instruction[20:25], 2)
+        rs1 = int(instruction[12:17], 2)  # RVRS
+        self.registers[rd] = int(bin(self.registers[rs1])[2:][::-1],2) #reverse the string of bits
+        # Convert to two's complement before logging/writing
+        self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        self.log(f"RVRS x{rd} = x{rs1} -> {self.registers[rd]}")
 
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
-
     # Correct Immediate Extraction (B-type format)
         imm = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0")
         imm = int(imm, 2)
@@ -116,28 +145,24 @@ class RISC_V_Simulator:
 
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 13)
-
-       
     # Execute branch
         if funct3 == "000":  # BEQ
             if self.registers[rs1] == self.registers[rs2]:
+                if(imm==0 or imm//4==0): # Check if immediate is zero --> halt
+                    self.halted=True
+                    self.log("Virtual halt encountered. Dumping memory...")
                 self.pc += imm // 4  # Convert byte offset to instruction offset
                 self.log(f"BEQ: x{rs1} == x{rs2}, PC updated to {self.pc * 4}")
                 self.pc -= 1 
-
         elif funct3 == "001":  # BNE
             if self.registers[rs1] != self.registers[rs2]:
                 self.pc += imm // 4
                 self.log(f"BNE: x{rs1} != x{rs2}, PC updated to {self.pc * 4}")
                 self.pc -= 1 
+        else:
+            self.log(f"Unknown branch instruction: {instruction}")
+            self.halted = True  # Stop execution on unknown instruction
 
-        elif funct3 == "100":  # BLT
-            if self.registers[rs1] < self.registers[rs2]:
-                self.pc += imm // 4
-                self.log(f"BLT: x{rs1} < x{rs2}, PC updated to {self.pc * 4}")
-                self.pc -= 1
-                
-    
     def execute_lw(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
@@ -158,6 +183,7 @@ class RISC_V_Simulator:
             self.log(f"LW x{rd} = memory[x{rs1} + {imm}={addr}] -> {self.registers[rd]}")
         else:
             self.log(f"LW: Invalid memory access at {addr}")
+            self.halted = True  # Stop execution on invalid memory access
 
     def execute_sw(self, instruction):
         rs1 = int(instruction[12:17], 2)
@@ -173,6 +199,7 @@ class RISC_V_Simulator:
             self.log(f"Memory[{hex(addr)}] (index {memory_index}) set to {self.memory[memory_index]}")
         else:
             self.log(f"SW: Invalid memory access at {addr}")
+            self.halted = True  # Stop execution on invalid memory access
 
     def execute_addi(self, instruction):
         rd = int(instruction[20:25], 2)
@@ -226,7 +253,6 @@ class RISC_V_Simulator:
         for i in range(32): 
             addr = start_addr + (i * 4)  # Compute actual memory address
             file.write(f"0x{addr:08X}:0b{self.memory[addr // 4]:032b}\n")  # Binary format with 32 bits
-
     def log(self, message):
         print(message)   
 

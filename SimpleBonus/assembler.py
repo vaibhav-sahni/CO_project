@@ -1,6 +1,6 @@
 from mappings import instruction_type,opcode,registers,funct3,funct7
 import sys
-from parsing import parse_R,parse_I,parse_B,parse_J,parse_S
+from parsing import parse_R,parse_I,parse_B,parse_J,parse_S,parse_rst,parse_rvrs
 from error_handling import check_syntax_errors,instructionSpecificError
 
 def tokens(assembly_text):
@@ -25,7 +25,7 @@ def error_main(assembly_text,labels,instructions):
             check_syntax_errors(instruction, labels, line)
             instructionSpecificError(line,labels)
 
-    if instructions[-1] != ["beq", "zero", "zero", "0"]: #checking if the hault instruction is present
+    if instructions[-1][0]!='beq' or instructions[-1][1]!=instructions[-1][2] or instructions[-1][3]!='0': #checking if the hault instruction is present
         raise SyntaxError("Hault instruction not found")
 
 def check_label(instruction,labels): #checking if the instruction is a new label and adding it to the labels dictionary with the program counter
@@ -62,7 +62,7 @@ def main(open_file,write_file):
             if not instruction:
                 instructions.remove(instruction)
         program_counter+=4
-
+    # print(instructions)
     error_main(assembly_text,labels,instructions)
 
     program_counter=0
@@ -71,8 +71,10 @@ def main(open_file,write_file):
         if instruction==['beq','zero','zero','0']: #checking for the hault instruction
             labels['0']=program_counter
             hault=instruction
+        if instruction[0]=='beq' and instruction[3]=='0' and instruction[2]==instruction[1]: #checking for the hault instruction
+            labels['0']=program_counter
+            hault=instruction
         if instruction[0] in instruction_type: #checking the instruction type and calling the respective function to parse the instruction
-
             # calling for R type instructions
             instruct=instruction[0]
             if instruction_type[instruct]=='R':
@@ -116,6 +118,14 @@ def main(open_file,write_file):
                 else:
                     immediate=offset(instruction,labels,immediate)
                     binary_instructions.append(parse_J(instruct,destination_register,immediate))
+            elif instruction_type[instruct]=='rst':
+                binary_instructions.append(parse_rst())
+            elif instruction_type[instruct]=='rvrs':
+                data_register=instruction[1]
+                source_register=instruction[2]
+                binary_instructions.append(parse_rvrs(instruct,data_register,source_register))
+            # elif instruction_type[instruct]=='rvrs':
+
         program_counter+=4
     # if hault=="": #checking if the hault instruction is present
         # binary_instructions.append(parse_I('beq','zero','zero','0'))
@@ -127,8 +137,5 @@ def main(open_file,write_file):
     for instruction in binary_instructions:
         file.write(instruction+'\n')
     file.close()
-
-read_file = sys.argv[1]
-write_file = sys.argv[2]
-main(read_file,write_file)
+main("SimpleBonus\\input.txt","SimpleBonus\\binary_code.txt")
 

@@ -1,0 +1,4 @@
+rvrs a5,a6
+mul a5,a6,a7
+rst
+beq a1,a1,0
