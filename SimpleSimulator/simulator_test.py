@@ -31,7 +31,7 @@ class RISC_V_Simulator:
                     break
 
                 self.decode_and_execute(instruction)
-                self.pc += 1  # Increment PC
+                self.pc += 1  
                 self.registers[0] = 0 
                 self.dump_registers(out)
             # self.registers[0] = 0  
@@ -69,7 +69,6 @@ class RISC_V_Simulator:
         if funct3 == "000" and funct7 == "0000000":  # ADD
             self.registers[rd] = self.registers[rs1] + self.registers[rs2]
 
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
@@ -77,34 +76,33 @@ class RISC_V_Simulator:
         elif funct3 == "000" and funct7 == "0100000":  # SUB
             self.registers[rd] = self.registers[rs1] - self.registers[rs2]
 
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "111" and funct7 == "0000000":  # AND
             self.registers[rd] = self.registers[rs1] & self.registers[rs2]
-            # Convert to two's complement before logging/writing
+            
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "110" and funct7 == "0000000":  # OR
             self.registers[rd] = self.registers[rs1] | self.registers[rs2]
-            # Convert to two's complement before logging/writing
+            
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
         
             self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "010" and funct7 == "0000000":  # SLT
             self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
-            # Convert to two's complement before logging/writing
+            
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
-            # Convert to two's complement before logging/writing
+            
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
@@ -115,12 +113,12 @@ class RISC_V_Simulator:
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
 
-    # Correct Immediate Extraction (B-type format)
+    
         imm = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0")
         imm = int(imm, 2)
        
 
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1":  
             imm -= (1 << 13)
 
        
@@ -149,13 +147,12 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
 
         imm = int(instruction[:12], 2)
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1":  
             imm -= (1 << 12)
 
-        # Calculate byte-level address
         addr = self.registers[rs1] + imm
         
-        # Convert to word index in memory array
+        
         memory_index = addr // 4
         
         if 0 <= memory_index < len(self.memory):
@@ -169,7 +166,7 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         imm = int(instruction[:7] + instruction[20:25], 2)
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1":  
             imm -= (1 << 12)
         addr = self.registers[rs1] + imm
         memory_index = (addr // 4)
@@ -185,11 +182,10 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
         
         imm = int(instruction[:12], 2)
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1":
             imm -= (1 << 12)
         
         self.registers[rd] = self.registers[rs1] + imm
-        # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
 
@@ -198,8 +194,8 @@ class RISC_V_Simulator:
         rs1 = int(instruction[12:17], 2)
         imm = int(instruction[:12], 2)
  
-        # sign extending the immediate 
-        if instruction[0] == "1":  # Sign extension for negative values
+
+        if instruction[0] == "1":
             imm -= (1 << 12)
 
         if rd != 0 : 
@@ -211,16 +207,16 @@ class RISC_V_Simulator:
         self.pc = self.pc - 1 
 
     def execute_jal(self, instruction):
-        rd = int(instruction[20:25], 2)    # Destination register (rd)
+        rd = int(instruction[20:25], 2)    
         imm = (instruction[0] + instruction[12:20] + instruction[11] + instruction[1:11] + "0")
         imm = int(imm, 2)
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1":  
             imm -= (1 << 21)
 
         self.registers[rd] = self.pc*4 + 4
 
-        # Update the program counter
-        self.pc += imm // 4 - 1  # Jump and adjust for loop increment
+        
+        self.pc += imm // 4 - 1  
         self.log(f"JAL x{rd} = {self.registers[rd]}, PC updated to {self.pc * 4}")
         # self.pc = self.pc - 1
 
@@ -228,7 +224,7 @@ class RISC_V_Simulator:
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
 
     def dump_memory(self, file):
-        start_addr = 0x00010000  # Starting memory address
+        start_addr = 0x00010000  
         for i in range(32): 
             addr = start_addr + (i * 4)  # Compute actual memory address
             file.write(f"0x{addr:08X}:0b{self.memory[addr // 4]:032b}\n")  # Binary format with 32 bits
