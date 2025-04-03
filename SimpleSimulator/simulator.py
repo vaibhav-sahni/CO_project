@@ -59,32 +59,30 @@ class RISC_V_Simulator:
         if value < 0:
             return (1 << 32) + value  # Add 2^32 to negative numbers
         return value
-
+    
+    def to_signed(value):
+        return value - (1 << 32) if value & (1 << 31) else value
+    
     def execute_r_type(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
         funct7 = instruction[:7]
-
         if funct3 == "000" and funct7 == "0000000":  # ADD
-            self.registers[rd] = self.registers[rs1] + self.registers[rs2]
-
+            self.registers[rd] = (self.registers[rs1] + self.registers[rs2]) & 0xFFFFFFFF
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
-
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "000" and funct7 == "0100000":  # SUB
-            self.registers[rd] = self.registers[rs1] - self.registers[rs2]
-
+            self.registers[rd] = (self.registers[rs1] - self.registers[rs2])  & 0xFFFFFFFF
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
-
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "111" and funct7 == "0000000":  # AND
-            self.registers[rd] = self.registers[rs1] & self.registers[rs2]
+            self.registers[rd] = (self.registers[rs1] & self.registers[rs2]) 
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
@@ -93,30 +91,95 @@ class RISC_V_Simulator:
             self.registers[rd] = self.registers[rs1] | self.registers[rs2]
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
-        
+    
             self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
 
+        # elif funct3 == "010" and funct7 == "0000000":  # SLT
+            # self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+            # self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "010" and funct7 == "0000000":  # SLT
-            self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
-            # Convert to two's complement before logging/writing
-            self.registers[rd] = self.to_twos_complement(self.registers[rd])
-
+            rs1_value = self.to_signed(self.registers[rs1])
+            rs2_value = self.to_signed(self.registers[rs2])
+            self.registers[rd] = 1 if rs1_value < rs2_value else 0
             self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
-
+    
         elif funct3 == "101" and funct7 == "0000000":  # SRL
-            self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
-            # Convert to two's complement before logging/writing
-            self.registers[rd] = self.to_twos_complement(self.registers[rd])
-
+            shift_amount = self.registers[rs2] & 0x1F  # Extract lower 5 bit
+            self.registers[rd] = (self.registers[rs1] >> shift_amount) & 0xFFFFFFFF
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+
         elif funct3 == "000" and funct7 == "0000001":  # MUL
-            self.registers[rd] = self.registers[rs1] * self.registers[rs2]
+            self.registers[rd] = (self.registers[rs1] * self.registers[rs2]) & 0xFFFFFFFF # Keep only lower 32 bits
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
+            self.log(f"MUL x{rd} = x{rs1}*x{rs2} -> {self.registers[rd]}")
+
         else:
             self.log(f"Unknown R-type instruction: {instruction}")
             self.halted = True
+        
         self.registers[0] = 0 
+
+    # def execute_r_type(self, instruction):
+        # rd = int(instruction[20:25], 2)
+        # rs1 = int(instruction[12:17], 2)
+        # rs2 = int(instruction[7:12], 2)
+        # funct3 = instruction[17:20]
+        # funct7 = instruction[:7]
+
+        # if funct3 == "000" and funct7 == "0000000":  # ADD
+            # self.registers[rd] = self.registers[rs1] + self.registers[rs2]
+
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
+            # self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "000" and funct7 == "0100000":  # SUB
+            # self.registers[rd] = self.registers[rs1] - self.registers[rs2]
+
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
+            # self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "111" and funct7 == "0000000":  # AND
+            # self.registers[rd] = self.registers[rs1] & self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+            # self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "110" and funct7 == "0000000":  # OR
+            # self.registers[rd] = self.registers[rs1] | self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        # 
+            # self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "010" and funct7 == "0000000":  # SLT
+            # self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
+            # self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "101" and funct7 == "0000000":  # SRL
+            # self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
+            # self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+        # elif funct3 == "000" and funct7 == "0000001":  # MUL
+            # self.registers[rd] = self.registers[rs1] * self.registers[rs2]
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        # else:
+            # self.log(f"Unknown R-type instruction: {instruction}")
+            # self.halted = True
+        # self.registers[0] = 0 
 
     def execute_rst(self,instruction): #reset instruction reset the registers to initial state
         if(instruction[0:7]=="0000000"):
