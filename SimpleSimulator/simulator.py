@@ -60,7 +60,7 @@ class RISC_V_Simulator:
             return (1 << 32) + value  # Add 2^32 to negative numbers
         return value
     
-    def to_signed(value):
+    def to_signed(self , value):
         return value - (1 << 32) if value & (1 << 31) else value
     
     def execute_r_type(self, instruction):
@@ -276,7 +276,7 @@ class RISC_V_Simulator:
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
         if rd != 0 : 
-            self.registers[rd] = self.registers[rs1] + imm
+            self.registers[rd] = (self.registers[rs1] + imm)  & 0xFFFFFFFF  # Keep result in 32-bit range
         # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
