@@ -63,7 +63,6 @@ class RISC_V_Simulator:
         if funct3 == "000" and funct7 == "0000000":  # ADD
             self.registers[rd] = self.registers[rs1] + self.registers[rs2]
 
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
@@ -71,34 +70,31 @@ class RISC_V_Simulator:
         elif funct3 == "000" and funct7 == "0100000":  # SUB
             self.registers[rd] = self.registers[rs1] - self.registers[rs2]
 
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "111" and funct7 == "0000000":  # AND
             self.registers[rd] = self.registers[rs1] & self.registers[rs2]
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"AND x{rd} = x{rs1} & x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "110" and funct7 == "0000000":  # OR
             self.registers[rd] = self.registers[rs1] | self.registers[rs2]
-            # Convert to two's complement before logging/writing
+
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
         
             self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "010" and funct7 == "0000000":  # SLT
             self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
-            # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             self.registers[rd] = self.registers[rs1] >> self.registers[rs2]
-            # Convert to two's complement before logging/writing
+
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
             self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
@@ -111,16 +107,15 @@ class RISC_V_Simulator:
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
 
-    # Correct Immediate Extraction (B-type format)
+  
         imm = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + "0")
         imm = int(imm, 2)
        
 
-        if instruction[0] == "1":  # Sign extension for negative values
+        if instruction[0] == "1": 
             imm -= (1 << 13)
 
-       
-    # Execute branch
+    
         if funct3 == "000":  # BEQ
             if self.registers[rs1] == self.registers[rs2]:
                 self.pc += imm // 4  # Convert byte offset to instruction offset
