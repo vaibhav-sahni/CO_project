@@ -116,10 +116,14 @@ class RISC_V_Simulator:
         else:
             self.log(f"Unknown R-type instruction: {instruction}")
             self.halted = True
+            
+        self.registers[0] = 0 
+
 
     def execute_rst(self,instruction): #reset instruction reset the registers to initial state
         if(instruction[0:7]=="0000000"):
-            self.registers[0]=0
+            for i in range(0, 32):  # Reset all registers except Pc
+                self.registers[i] = 0
             self.registers[2]=380
             self.log("Registers reset to initial state.")
         else:
@@ -129,10 +133,12 @@ class RISC_V_Simulator:
     def execute_rvrs(self,instruction): #reverse the string of bits
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)  # RVRS
-        self.registers[rd] = int(bin(self.registers[rs1])[2:][::-1],2) #reverse the string of bits
+        if rd != 0 : 
+            self.registers[rd] = int(bin(self.registers[rs1])[2:][::-1],2) #reverse the string of bits
         # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"RVRS x{rd} = x{rs1} -> {self.registers[rd]}")
+        
 
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
@@ -178,7 +184,8 @@ class RISC_V_Simulator:
         memory_index = addr // 4
         
         if 0 <= memory_index < len(self.memory):
-            self.registers[rd] = self.memory[memory_index]
+            if rd != 0 : 
+                self.registers[rd] = self.memory[memory_index]
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"LW x{rd} = memory[x{rs1} + {imm}={addr}] -> {self.registers[rd]}")
         else:
@@ -209,7 +216,8 @@ class RISC_V_Simulator:
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
         
-        self.registers[rd] = self.registers[rs1] + imm
+        if rd != 0 : 
+            self.registers[rd] = self.registers[rs1] + imm
         # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
@@ -238,7 +246,8 @@ class RISC_V_Simulator:
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 21)
 
-        self.registers[rd] = self.pc*4 + 4
+        if rd != 0 : 
+            self.registers[rd] = self.pc*4 + 4
 
         # Update the program counter
         self.pc += imm // 4 - 1  # Jump and adjust for loop increment

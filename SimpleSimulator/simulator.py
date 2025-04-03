@@ -14,19 +14,19 @@ class RISC_V_Simulator:
     def execute(self):
         with open(self.output_file, "w") as out:
             while not self.halted and self.pc < len(self.instructions):
-                # self.registers[0] = 0 ;  
+                self.registers[0] = 0  
                 instruction = self.instructions[self.pc]
                 self.log(f"Executing PC={self.pc * 4}: {instruction}")
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
                     # self.pc += 1 
-                    # self.registers[0] = 0  
+                    self.registers[0] = 0  
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
                 self.decode_and_execute(instruction)
                 self.pc += 1  # Increment PC
-                self.registers[0] = 0 ;  
+                self.registers[0] = 0 
                 self.dump_registers(out)
             self.dump_memory(out)
 
@@ -116,10 +116,12 @@ class RISC_V_Simulator:
         else:
             self.log(f"Unknown R-type instruction: {instruction}")
             self.halted = True
+        self.registers[0] = 0 
 
     def execute_rst(self,instruction): #reset instruction reset the registers to initial state
         if(instruction[0:7]=="0000000"):
-            self.registers[0]=0
+            for i in range(0, 32):  # Reset all registers except Pc
+                self.registers[i] = 0
             self.registers[2]=380
             self.log("Registers reset to initial state.")
         else:
@@ -133,6 +135,7 @@ class RISC_V_Simulator:
         # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"RVRS x{rd} = x{rs1} -> {self.registers[rd]}")
+
 
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
