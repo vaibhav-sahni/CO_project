@@ -60,7 +60,7 @@ class RISC_V_Simulator:
             return (1 << 32) + value  # Add 2^32 to negative numbers
         return value
     
-    def to_signed(value):
+    def to_signed(self , value):
         return value - (1 << 32) if value & (1 << 31) else value
 
     def execute_r_type(self, instruction):
@@ -244,7 +244,7 @@ class RISC_V_Simulator:
             imm -= (1 << 12)
         
         if rd != 0 : 
-            self.registers[rd] = self.registers[rs1] + imm
+            self.registers[rd] = (self.registers[rs1] + imm)  & 0xFFFFFFFF  # Keep result in 32-bit range
         # Convert to two's complement before logging/writing
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"ADDI x{rd} = x{rs1} + {imm} -> {self.registers[rd]}")
@@ -282,8 +282,8 @@ class RISC_V_Simulator:
         # self.pc = self.pc - 1
 
     def dump_registers(self, file):
-        # file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
-        file.write(f"{self.pc * 4} " + " ".join(str(reg) for reg in self.registers) + "\n")
+        file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
+        # file.write(f"{self.pc * 4} " + " ".join(str(reg) for reg in self.registers) + "\n")
 
     def dump_memory(self, file):
         start_addr = 0x00010000  # Starting memory address
