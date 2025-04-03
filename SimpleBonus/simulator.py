@@ -48,7 +48,7 @@ class RISC_V_Simulator:
             self.execute_addi(instruction)
         elif opcode=="0000000": #rst
             self.execute_rst(instruction) 
-        elif opcode=="0000001": #rvrs--> reverse the string of bits
+        elif opcode=="0001011": #rvrs--> reverse the string of bits
             self.execute_rvrs(instruction)
         else:
             self.log(f"Unknown instruction: {instruction}")
@@ -129,16 +129,31 @@ class RISC_V_Simulator:
         else:
             self.log("Invalid reset instruction.")
             self.halted=True
+
+    def execute_rvrs(self, instruction):
+        # Opcode = 0001011
+        # Funct7 = 0000001
+        # Funct3 = 000
+        rd = int(instruction[20:25], 2)  # Destination register
+        rs1 = int(instruction[12:17], 2)  # Source register
     
-    def execute_rvrs(self,instruction): #reverse the string of bits
-        rd = int(instruction[20:25], 2)
-        rs1 = int(instruction[12:17], 2)  # RVRS
-        if rd != 0 : 
-            self.registers[rd] = int(bin(self.registers[rs1])[2:][::-1],2) #reverse the string of bits
-        # Convert to two's complement before logging/writing
-        self.registers[rd] = self.to_twos_complement(self.registers[rd])
-        self.log(f"RVRS x{rd} = x{rs1} -> {self.registers[rd]}")
+        # Get the value from rs1
+        value = self.registers[rs1]
+    
+        reversed_value = 0
+        for i in range(32):  
+            # Extract bit at position i from original value
+            bit = (value >> i) & 1
+            # Place it at position (31-i) in the result
+            reversed_value |= (bit << (31 - i))
+    
+        if rd != 0:
+            self.registers[rd] = reversed_value
         
+    
+        # Convert to two's complement before logging
+        self.registers[rd] = self.to_twos_complement(self.registers[rd])
+        self.log(f"RVRS x{rd} = reversed(x{rs1}) -> {self.registers[rd]}")
 
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
@@ -255,8 +270,9 @@ class RISC_V_Simulator:
         # self.pc = self.pc - 1
 
     def dump_registers(self, file):
-        file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
-    
+        # file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
+        file.write(f"{self.pc * 4} " + " ".join(str(reg) for reg in self.registers) + "\n")
+
     def dump_memory(self, file):
         start_addr = 0x00010000  # Starting memory address
         for i in range(32): 
