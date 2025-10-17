@@ -18,6 +18,7 @@ funct3={
     'or': '110',
     'and': '111',
     'srl': '101',
+    'mul': '000',
     
     #I type
     'lw': '010',
@@ -31,6 +32,9 @@ funct3={
     'beq': '000',
     'bne': '001',
     'blt': '100',
+
+    'rst':'000',
+    'rvrs':'000',
 }
 instruction_type={
     'add': 'R',
@@ -39,6 +43,7 @@ instruction_type={
     'or': 'R',
     'and': 'R',
     'srl': 'R',
+    'mul': 'R',
     'lw': 'I',
     'addi': 'I',
     'jalr': 'I',
@@ -49,6 +54,8 @@ instruction_type={
     'blt': 'B',
     'bltu':'B',
     'jal':'J',
+    'rst':'rst',
+    'rvrs':'rvrs',
 }
 
 opcode={
@@ -59,6 +66,7 @@ opcode={
     'or': '0110011',
     'and': '0110011',
     'srl': '0110011',
+    'mul': '0110011',
     #I type
     'lw': '0000011',
     'addi': '0010011',
@@ -74,6 +82,9 @@ opcode={
     
     #J type
     'jal':'1101111',
+
+    'rst':'0000000',
+    'rvrs':'0000001',
 }
 
 registers={

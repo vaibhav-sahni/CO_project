@@ -14,19 +14,19 @@ class RISC_V_Simulator:
     def execute(self):
         with open(self.output_file, "w") as out:
             while not self.halted and self.pc < len(self.instructions):
-                self.registers[0] = 0  
+                # self.registers[0] = 0 ;  
                 instruction = self.instructions[self.pc]
                 self.log(f"Executing PC={self.pc * 4}: {instruction}")
                 if instruction == "00000000000000000000000001100011":  # Virtual halt (beq x0, x0, 0)
                     self.halted = True
                     # self.pc += 1 
-                    self.registers[0] = 0  
+                    # self.registers[0] = 0  
                     self.dump_registers(out)
                     self.log("Virtual halt encountered. Dumping memory...")
                     break
                 self.decode_and_execute(instruction)
                 self.pc += 1  # Increment PC
-                self.registers[0] = 0 
+                self.registers[0] = 0 ;  
                 self.dump_registers(out)
             self.dump_memory(out)
 
@@ -62,23 +62,28 @@ class RISC_V_Simulator:
     
     def to_signed(self , value):
         return value - (1 << 32) if value & (1 << 31) else value
-    
+
     def execute_r_type(self, instruction):
         rd = int(instruction[20:25], 2)
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
         funct3 = instruction[17:20]
         funct7 = instruction[:7]
+
         if funct3 == "000" and funct7 == "0000000":  # ADD
             self.registers[rd] = (self.registers[rs1] + self.registers[rs2]) & 0xFFFFFFFF
+
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"ADD x{rd} = x{rs1} + x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "000" and funct7 == "0100000":  # SUB
             self.registers[rd] = (self.registers[rs1] - self.registers[rs2])  & 0xFFFFFFFF
+
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
             self.log(f"SUB x{rd} = x{rs1} - x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "111" and funct7 == "0000000":  # AND
@@ -91,31 +96,41 @@ class RISC_V_Simulator:
             self.registers[rd] = self.registers[rs1] | self.registers[rs2]
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
-    
+        
             self.log(f"OR x{rd} = x{rs1} | x{rs2} -> {self.registers[rd]}")
+
+        # elif funct3 == "010" and funct7 == "0000000":  # SLT
+            # self.registers[rd] = 1 if self.registers[rs1] < self.registers[rs2] else 0
+            # Convert to two's complement before logging/writing
+            # self.registers[rd] = self.to_twos_complement(self.registers[rd])
+
+            # self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
 
         elif funct3 == "010" and funct7 == "0000000":  # SLT
             rs1_value = self.to_signed(self.registers[rs1])
             rs2_value = self.to_signed(self.registers[rs2])
             self.registers[rd] = 1 if rs1_value < rs2_value else 0
             self.log(f"SLT x{rd} = x{rs1} < x{rs2} -> {self.registers[rd]}")
-    
+        
+
         elif funct3 == "101" and funct7 == "0000000":  # SRL
             shift_amount = self.registers[rs2] & 0x1F  # Extract lower 5 bit
             self.registers[rd] = (self.registers[rs1] >> shift_amount) & 0xFFFFFFFF
-            self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
+            # Convert to two's complement before logging/writing
+            self.registers[rd] = self.to_twos_complement(self.registers[rd])
 
+            self.log(f"SRL x{rd} = x{rs1} >> x{rs2} -> {self.registers[rd]}")
         elif funct3 == "000" and funct7 == "0000001":  # MUL
             self.registers[rd] = (self.registers[rs1] * self.registers[rs2]) & 0xFFFFFFFF # Keep only lower 32 bits
             # Convert to two's complement before logging/writing
             self.registers[rd] = self.to_twos_complement(self.registers[rd])
             self.log(f"MUL x{rd} = x{rs1}*x{rs2} -> {self.registers[rd]}")
-
         else:
             self.log(f"Unknown R-type instruction: {instruction}")
             self.halted = True
-        
+            
         self.registers[0] = 0 
+
 
     def execute_rst(self,instruction): #reset instruction reset the registers to initial state
         if(instruction[0:7]=="0000000"):
@@ -126,7 +141,7 @@ class RISC_V_Simulator:
         else:
             self.log("Invalid reset instruction.")
             self.halted=True
-    
+
     def execute_rvrs(self, instruction):
         # Opcode = 0001011
         # Funct7 = 0000001
@@ -146,11 +161,12 @@ class RISC_V_Simulator:
     
         if rd != 0:
             self.registers[rd] = reversed_value
-    
+        
+
         # Convert to two's complement before logging
         self.registers[rd] = self.to_twos_complement(self.registers[rd])
         self.log(f"RVRS x{rd} = reversed(x{rs1}) -> {self.registers[rd]}")
-    
+
     def execute_b_type(self, instruction):
         rs1 = int(instruction[12:17], 2)
         rs2 = int(instruction[7:12], 2)
@@ -226,6 +242,7 @@ class RISC_V_Simulator:
         imm = int(instruction[:12], 2)
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 12)
+        
         if rd != 0 : 
             self.registers[rd] = (self.registers[rs1] + imm)  & 0xFFFFFFFF  # Keep result in 32-bit range
         # Convert to two's complement before logging/writing
@@ -256,7 +273,7 @@ class RISC_V_Simulator:
         if instruction[0] == "1":  # Sign extension for negative values
             imm -= (1 << 21)
 
-        if rd!= 0 : 
+        if rd != 0 : 
             self.registers[rd] = self.pc*4 + 4
 
         # Update the program counter
@@ -266,7 +283,8 @@ class RISC_V_Simulator:
 
     def dump_registers(self, file):
         file.write(f"0b{'{:032b}'.format(self.pc * 4)} " + " ".join(f"0b{'{:032b}'.format(reg)}" for reg in self.registers) + "\n")
-    
+        # file.write(f"{self.pc * 4} " + " ".join(str(reg) for reg in self.registers) + "\n")
+
     def dump_memory(self, file):
         start_addr = 0x00010000  # Starting memory address
         for i in range(32): 
@@ -275,11 +293,12 @@ class RISC_V_Simulator:
     def log(self, message):
         print(message)   
 
-read_filepath = sys.argv[1]
-write_filepath = sys.argv[2]
+# read_filepath = sys.argv[1]
+# write_filepath = sys.argv[2]
 def main(read_filepath, write_filepath): 
     simulator = RISC_V_Simulator()
     simulator.output_file = write_filepath
     simulator.load_binary(read_filepath)
     simulator.execute()
-main(read_filepath, write_filepath)
+# main(, write_filepath)
+main("SimpleBonus\\input_binary.txt", "SimpleBonus\\output.txt")
